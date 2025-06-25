@@ -1,16 +1,13 @@
 import { Pool } from 'pg';
 import logger from '../utils/logger';
 
-// Create a new pool instance
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // IMPORTANT for Render managed Postgres
+  },
 });
 
-// Connect to the database
 export const connectDB = async (): Promise<void> => {
   try {
     const client = await pool.connect();
@@ -22,7 +19,6 @@ export const connectDB = async (): Promise<void> => {
   }
 };
 
-// Execute a query
 export const query = async (text: string, params?: any[]): Promise<any> => {
   try {
     const start = Date.now();
