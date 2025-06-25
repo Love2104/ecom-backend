@@ -1,10 +1,11 @@
 import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
-import { PaymentModel, PaymentInput, Payment } from '../models/Payment';
+import { PaymentModel, Payment } from '../models/Payment';
 import { OrderModel } from '../models/Order';
 import { AppError } from '../middlewares/errorHandler';
 
 export class PaymentService {
+  // Create payment intent (UPI or card)
   static async createPaymentIntent(
     orderId: string,
     method: 'card' | 'upi',
@@ -31,6 +32,8 @@ export class PaymentService {
       payment_details: {}
     });
 
+    if (!payment) throw new AppError('Failed to create payment', 500);
+
     if (method === 'upi') {
       const upiData = {
         pa: 'merchant@upi',
@@ -39,6 +42,7 @@ export class PaymentService {
         cu: 'INR',
         tr: payment.payment_reference
       };
+
       const upiUri = `upi://pay?pa=${upiData.pa}&pn=${upiData.pn}&am=${upiData.am}&cu=${upiData.cu}&tr=${upiData.tr}`;
       const qrCode = await QRCode.toDataURL(upiUri);
 
@@ -55,6 +59,7 @@ export class PaymentService {
     return { payment };
   }
 
+  // Verify UPI payment
   static async verifyUpiPayment(paymentReference: string, userId: string): Promise<Payment> {
     const payment = await PaymentModel.findByReference(paymentReference);
     if (!payment) throw new AppError('Payment not found', 404);
@@ -73,6 +78,7 @@ export class PaymentService {
     return updatedPayment;
   }
 
+  // Process card payment
   static async processCardPayment(paymentId: string, cardDetails: any, userId: string): Promise<Payment> {
     const payment = await PaymentModel.findById(paymentId);
     if (!payment) throw new AppError('Payment not found', 404);
@@ -92,6 +98,7 @@ export class PaymentService {
     return updatedPayment;
   }
 
+  // Get payment status
   static async getPaymentStatus(paymentId: string, userId: string, isAdmin: boolean): Promise<Payment> {
     const payment = await PaymentModel.findById(paymentId);
     if (!payment) throw new AppError('Payment not found', 404);

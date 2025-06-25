@@ -13,7 +13,6 @@ export class AppError extends Error {
   }
 }
 
-// Updated: Use AppError class directly — no conflicting interface
 export const errorHandler = (
   err: AppError,
   req: Request,
@@ -23,15 +22,14 @@ export const errorHandler = (
   logger.error(`${err.name}: ${err.message}`, { stack: err.stack });
 
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Server Error';
-  const errors = err.errors || null;
-
-  res.status(statusCode).json({
+  const response = {
     success: false,
     error: {
-      message,
-      ...(errors && { errors }),
+      message: err.message || 'Server Error',
+      ...(err.errors && { errors: err.errors }),
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     }
-  });
+  };
+
+  res.status(statusCode).json(response);
 };

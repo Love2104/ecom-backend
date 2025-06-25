@@ -1,24 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
-// import jwt, { SignOptions } from 'jsonwebtoken'; // ✅ Correct import
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { UserModel } from '../models/User';
 import { AppError } from '../middlewares/errorHandler';
-
-// import jwt from 'jsonwebtoken';
 
 const generateToken = (id: string, role: string): string => {
   const secret = process.env.JWT_SECRET;
   const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
 
-  if (!secret) {
-    throw new Error('JWT_SECRET is not defined');
-  }
+  if (!secret) throw new Error('JWT_SECRET not defined');
 
-  return jwt.sign({ id, role }, secret, {
-    expiresIn: expiresIn as jwt.SignOptions['expiresIn'],
-  });
+  const options: SignOptions = {
+    expiresIn: expiresIn as SignOptions['expiresIn'],
+  };
+
+  return jwt.sign({ id, role }, secret, options);
 };
+
+// Register and login logic (unchanged from your version)
 
 
 
