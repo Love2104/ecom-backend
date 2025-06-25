@@ -1,15 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
+// import jwt, { SignOptions } from 'jsonwebtoken'; // ✅ Correct import
 import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/User';
 import { AppError } from '../middlewares/errorHandler';
 
-// Generate JWT token
+// import jwt from 'jsonwebtoken';
+
 const generateToken = (id: string, role: string): string => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET as string, {
-    expiresIn: process.env.JWT_EXPIRES_IN
+  const secret = process.env.JWT_SECRET;
+  const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
+
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+
+  return jwt.sign({ id, role }, secret, {
+    expiresIn: expiresIn as jwt.SignOptions['expiresIn'],
   });
 };
+
+
 
 // Register a new user
 export const register = async (
@@ -18,7 +29,6 @@ export const register = async (
   next: NextFunction
 ) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return next(new AppError('Validation error', 400, errors.array()));
@@ -26,20 +36,12 @@ export const register = async (
 
     const { name, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await UserModel.findByEmail(email);
     if (existingUser) {
       return next(new AppError('User already exists', 400));
     }
 
-    // Create user
-    const user = await UserModel.create({
-      name,
-      email,
-      password
-    });
-
-    // Generate token
+    const user = await UserModel.create({ name, email, password });
     const token = generateToken(user.id, user.role);
 
     res.status(201).json({
@@ -49,8 +51,8 @@ export const register = async (
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
     next(error);
@@ -64,27 +66,18 @@ export const login = async (
   next: NextFunction
 ) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return next(new AppError('Validation error', 400, errors.array()));
     }
 
     const { email, password } = req.body;
-
-    // Check if user exists
     const user = await UserModel.findByEmail(email);
-    if (!user) {
+
+    if (!user || !(await UserModel.comparePassword(password, user.password))) {
       return next(new AppError('Invalid credentials', 401));
     }
 
-    // Check if password matches
-    const isMatch = await UserModel.comparePassword(password, user.password);
-    if (!isMatch) {
-      return next(new AppError('Invalid credentials', 401));
-    }
-
-    // Generate token
     const token = generateToken(user.id, user.role);
 
     res.status(200).json({
@@ -94,8 +87,8 @@ export const login = async (
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
     next(error);
@@ -110,15 +103,12 @@ export const getCurrentUser = async (
 ) => {
   try {
     const user = await UserModel.findById(req.user!.id);
-    
+
     if (!user) {
       return next(new AppError('User not found', 404));
     }
 
-    res.status(200).json({
-      success: true,
-      user
-    });
+    res.status(200).json({ success: true, user });
   } catch (error) {
     next(error);
   }
@@ -132,22 +122,17 @@ export const updateProfile = async (
 ) => {
   try {
     const { name, email, password } = req.body;
-    
-    // Update user
     const updatedUser = await UserModel.update(req.user!.id, {
       name,
       email,
-      password
+      password,
     });
 
     if (!updatedUser) {
       return next(new AppError('User not found', 404));
     }
 
-    res.status(200).json({
-      success: true,
-      user: updatedUser
-    });
+    res.status(200).json({ success: true, user: updatedUser });
   } catch (error) {
     next(error);
   }

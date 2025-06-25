@@ -1,20 +1,17 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { StringValue } from 'ms'; // ✅ Needed for expiresIn type
 import { UserModel, UserInput, UserOutput } from '../models/User';
 import { AppError } from '../middlewares/errorHandler';
 
 export class AuthService {
   // Register a new user
   static async register(userData: UserInput): Promise<{ user: UserOutput; token: string }> {
-    // Check if user already exists
     const existingUser = await UserModel.findByEmail(userData.email);
     if (existingUser) {
       throw new AppError('User already exists', 400);
     }
 
-    // Create user
     const user = await UserModel.create(userData);
-
-    // Generate token
     const token = this.generateToken(user.id, user.role);
 
     return { user, token };
@@ -22,19 +19,16 @@ export class AuthService {
 
   // Login user
   static async login(email: string, password: string): Promise<{ user: UserOutput; token: string }> {
-    // Check if user exists
     const user = await UserModel.findByEmail(email);
     if (!user) {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Check if password matches
     const isMatch = await UserModel.comparePassword(password, user.password);
     if (!isMatch) {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Generate token
     const token = this.generateToken(user.id, user.role);
 
     return {
@@ -49,10 +43,19 @@ export class AuthService {
     };
   }
 
-  // Generate JWT token
+  // ✅ Generate JWT token with type-safe `expiresIn`
   static generateToken(id: string, role: string): string {
-    return jwt.sign({ id, role }, process.env.JWT_SECRET as string, {
-      expiresIn: process.env.JWT_EXPIRES_IN
-    });
+    const secret = process.env.JWT_SECRET;
+    const expiresInEnv = process.env.JWT_EXPIRES_IN || '30d';
+
+    if (!secret) {
+      throw new Error('JWT_SECRET is not defined in environment variables');
+    }
+
+    const options: SignOptions = {
+      expiresIn: expiresInEnv as StringValue,
+    };
+
+    return jwt.sign({ id, role }, secret, options);
   }
 }
