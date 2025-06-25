@@ -13,11 +13,9 @@ import paymentRoutes from './routes/paymentRoutes';
 const app: Express = express();
 
 // Middleware
+app.use(express.json());
 app.use(cors({
-  origin: [
-    'http://localhost:3000', // for local dev
-    'https://ecom-frontend-7m84tj450-loves-projects-e374f073.vercel.app' // your deployed frontend
-  ],
+  origin: process.env.CORS_ORIGIN || 'https://ecom-frontend-7m84tj450-loves-projects-e374f073.vercel.app',
   credentials: true
 }));
 
@@ -26,6 +24,8 @@ app.use(helmet());
 // Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
+} else {
+  app.use(morgan('combined'));
 }
 
 // Routes
@@ -37,6 +37,15 @@ app.use('/api/payments', paymentRoutes);
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Root endpoint with API information
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'ShopEase API is running',
+    documentation: '/api-docs',
+    version: '1.0.0'
+  });
 });
 
 // Error handling middleware

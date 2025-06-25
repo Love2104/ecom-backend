@@ -47,10 +47,14 @@ export const createPaymentIntent = async (
     });
 
     if (method === 'upi') {
+      // Use the configured UPI ID from environment variables
+      const upiId = process.env.UPI_ID || '7240172161@ybl';
+      const merchantName = process.env.UPI_MERCHANT_NAME || 'ShopEase';
+      
       // Generate UPI payment data
       const upiData = {
-        pa: 'merchant@upi', // Merchant UPI ID
-        pn: 'ShopEase',
+        pa: upiId, // Merchant UPI ID from env
+        pn: merchantName,
         am: order.total.toString(),
         cu: 'INR',
         tr: payment.payment_reference

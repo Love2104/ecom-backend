@@ -4,7 +4,7 @@ import logger from '../utils/logger';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false, // IMPORTANT for Render managed Postgres
+    rejectUnauthorized: false, // Required for Render managed Postgres
   },
 });
 

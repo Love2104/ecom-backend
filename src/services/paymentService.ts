@@ -35,9 +35,13 @@ export class PaymentService {
     if (!payment) throw new AppError('Failed to create payment', 500);
 
     if (method === 'upi') {
+      // Use the configured UPI ID from environment variables
+      const upiId = process.env.UPI_ID || '7240172161@ybl';
+      const merchantName = process.env.UPI_MERCHANT_NAME || 'ShopEase';
+      
       const upiData = {
-        pa: 'merchant@upi',
-        pn: 'ShopEase',
+        pa: upiId,
+        pn: merchantName,
         am: order.total.toString(),
         cu: 'INR',
         tr: payment.payment_reference
