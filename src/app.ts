@@ -13,12 +13,14 @@ import paymentRoutes from './routes/paymentRoutes';
 const app: Express = express();
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000', // for local dev
+    'https://ecom-frontend-7m84tj450-loves-projects-e374f073.vercel.app' // your deployed frontend
+  ],
   credentials: true
 }));
+
 app.use(helmet());
 
 // Logging
