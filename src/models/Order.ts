@@ -48,13 +48,10 @@ export interface OrderInput {
 }
 
 export class OrderModel {
-  // Create a new order
   static async create(orderData: OrderInput): Promise<Order> {
-    // Start a transaction
-    const client = await query('BEGIN');
+    await query('BEGIN');
 
     try {
-      // 1. Calculate total by fetching product prices
       let total = 0;
       const orderItems: OrderItem[] = [];
 
@@ -82,38 +79,22 @@ export class OrderModel {
         });
       }
 
-      // 2. Create the order
       const orderResult = await query(
         `INSERT INTO orders (user_id, total, status, shipping_address, payment_method) 
-         VALUES ($1, $2, $3, $4, $5) 
-         RETURNING *`,
-        [
-          orderData.user_id,
-          total,
-          'pending',
-          orderData.shipping_address,
-          orderData.payment_method
-        ]
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [orderData.user_id, total, 'pending', orderData.shipping_address, orderData.payment_method]
       );
 
       const order = orderResult.rows[0];
 
-      // 3. Create order items
       for (const item of orderItems) {
         await query(
           `INSERT INTO order_items (order_id, product_id, product_name, price, quantity) 
            VALUES ($1, $2, $3, $4, $5)`,
-          [
-            order.id,
-            item.product_id,
-            item.product_name,
-            item.price,
-            item.quantity
-          ]
+          [order.id, item.product_id, item.product_name, item.price, item.quantity]
         );
       }
 
-      // 4. Update product stock
       for (const item of orderData.items) {
         await query(
           'UPDATE products SET stock = stock - $1 WHERE id = $2',
@@ -121,61 +102,49 @@ export class OrderModel {
         );
       }
 
-      // Commit the transaction
       await query('COMMIT');
-
-      // Return the order with items
       order.items = orderItems;
       return order;
     } catch (error) {
-      // Rollback the transaction in case of error
       await query('ROLLBACK');
       throw error;
     }
   }
 
-  // Get order by ID
   static async findById(id: string): Promise<Order | null> {
     const orderResult = await query('SELECT * FROM orders WHERE id = $1', [id]);
-
-    if (orderResult.rows.length === 0) {
-      return null;
-    }
+    if (orderResult.rows.length === 0) return null;
 
     const order = orderResult.rows[0];
-
-    // Get order items
-    const itemsResult = await query(
-      'SELECT * FROM order_items WHERE order_id = $1',
-      [id]
-    );
-
+    const itemsResult = await query('SELECT * FROM order_items WHERE order_id = $1', [id]);
     order.items = itemsResult.rows;
     return order;
   }
 
-  // Get orders by user ID
   static async findByUserId(userId: string): Promise<Order[]> {
-    const ordersResult = await query(
-      'SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC',
-      [userId]
-    );
-
+    const ordersResult = await query('SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
     const orders = ordersResult.rows;
 
-    // Get items for each order
     for (const order of orders) {
-      const itemsResult = await query(
-        'SELECT * FROM order_items WHERE order_id = $1',
-        [order.id]
-      );
+      const itemsResult = await query('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
       order.items = itemsResult.rows;
     }
 
     return orders;
   }
 
-  // Update order status
+  static async findAll(): Promise<Order[]> {
+    const ordersResult = await query('SELECT * FROM orders ORDER BY created_at DESC');
+    const orders = ordersResult.rows;
+
+    for (const order of orders) {
+      const itemsResult = await query('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+      order.items = itemsResult.rows;
+    }
+
+    return orders;
+  }
+
   static async updateStatus(
     id: string,
     status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
@@ -185,10 +154,6 @@ export class OrderModel {
       [status, id]
     );
 
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    return result.rows[0];
+    return result.rows.length > 0 ? result.rows[0] : null;
   }
 }
