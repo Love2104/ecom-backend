@@ -14,8 +14,19 @@ const app: Express = express();
 
 // Middleware
 app.use(express.json());
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://ecom-frontend-p3hsoax6w-loves-projects-e374f073.vercel.app'
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://ecom-frontend-7m84tj450-loves-projects-e374f073.vercel.app',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
