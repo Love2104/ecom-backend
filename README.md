@@ -2,53 +2,65 @@
 
 This is the backend API for the ShopEase e-commerce application, built with Node.js, Express, TypeScript, and PostgreSQL.
 
-## API Base URL
+## Table of Contents
 
-The API is hosted at: https://ecom-backend-40dr.onrender.com
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Variables](#environment-variables)
+  - [Database Setup](#database-setup)
+  - [Running the Server](#running-the-server)
+- [API Documentation](#api-documentation)
+  - [Authentication Endpoints](#authentication-endpoints)
+  - [Product Endpoints](#product-endpoints)
+  - [Order Endpoints](#order-endpoints)
+  - [Payment Endpoints](#payment-endpoints)
+- [Authentication](#authentication)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
 
-## API Documentation
+## Features
 
-### Authentication Endpoints
+- User authentication and authorization
+- Product management (CRUD operations)
+- Order processing
+- Payment processing (UPI and Card)
+- Image upload functionality
+- Admin dashboard functionality
 
-| Method | Endpoint | Description | Request Body | Response |
-|--------|----------|-------------|--------------|----------|
-| POST | `/api/auth/register` | Register a new user | `{ name, email, password }` | `{ success, token, user }` |
-| POST | `/api/auth/login` | Login a user | `{ email, password }` | `{ success, token, user }` |
-| GET | `/api/auth/me` | Get current user | - | `{ success, user }` |
-| PUT | `/api/auth/profile` | Update user profile | `{ name, email, password }` | `{ success, user }` |
+## Tech Stack
 
-### Product Endpoints
+- **Node.js** - JavaScript runtime
+- **Express** - Web framework
+- **TypeScript** - Type safety
+- **PostgreSQL** - Database
+- **JWT** - Authentication
+- **Multer** - File uploads
+- **Winston** - Logging
 
-| Method | Endpoint | Description | Query Parameters | Response |
-|--------|----------|-------------|------------------|----------|
-| GET | `/api/products` | Get all products | `search, category, minPrice, maxPrice, sort, page, limit` | `{ success, count, total, page, pages, products }` |
-| GET | `/api/products/:id` | Get a single product | - | `{ success, product }` |
-| GET | `/api/products/featured` | Get featured products | `limit` | `{ success, count, products }` |
-| GET | `/api/products/new-arrivals` | Get new arrivals | `limit` | `{ success, count, products }` |
-| GET | `/api/products/on-sale` | Get products on sale | `limit` | `{ success, count, products }` |
-| GET | `/api/products/:id/related` | Get related products | `limit` | `{ success, count, products }` |
-| POST | `/api/products` | Create a product (admin) | `{ name, description, price, image, category, stock, ... }` | `{ success, product }` |
-| PUT | `/api/products/:id` | Update a product (admin) | `{ name, price, ... }` | `{ success, product }` |
-| DELETE | `/api/products/:id` | Delete a product (admin) | - | `{ success, message }` |
+## Getting Started
 
-### Order Endpoints
+### Prerequisites
 
-| Method | Endpoint | Description | Request Body | Response |
-|--------|----------|-------------|--------------|----------|
-| POST | `/api/orders` | Create a new order | `{ items, shipping_address, payment_method }` | `{ success, order }` |
-| GET | `/api/orders/my-orders` | Get user's orders | - | `{ success, count, orders }` |
-| GET | `/api/orders/:id` | Get order by ID | - | `{ success, order }` |
-| PUT | `/api/orders/:id/status` | Update order status (admin) | `{ status }` | `{ success, order }` |
+- Node.js 16+ and npm
+- PostgreSQL database
+- Git
 
-### Payment Endpoints
+### Installation
 
-| Method | Endpoint | Description | Request Body | Response |
-|--------|----------|-------------|--------------|----------|
-| POST | `/api/payments/create-intent` | Create payment intent | `{ orderId, method }` | `{ success, payment, upi? }` |
-| POST | `/api/payments/verify-upi` | Verify UPI payment | `{ paymentReference }` | `{ success, payment }` |
-| POST | `/api/payments/process-card` | Process card payment | `{ paymentId, cardDetails }` | `{ success, payment }` |
-| GET | `/api/payments/:id` | Get payment status | - | `{ success, payment }` |
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/ecom-backend.git
+   cd ecom-backend
+   ```
 
-## Authentication
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-All protected endpoints require a JWT token to be included in the request headers:
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:

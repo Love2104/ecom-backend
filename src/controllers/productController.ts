@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import { ProductModel } from '../models/Product';
 import { AppError } from '../middlewares/errorHandler';
+import { processImageUpload } from '../middlewares/upload';
 
 // Get all products with filtering
 export const getProducts = async (
@@ -80,7 +81,37 @@ export const createProduct = async (
       return next(new AppError('Validation error', 400, errors.array()));
     }
 
-    const product = await ProductModel.create(req.body);
+    // Process image upload (file or URL)
+    const imageUrl = processImageUpload(req);
+    if (!imageUrl) {
+      return next(new AppError('Product image is required', 400));
+    }
+
+    // Parse tags if they exist
+    let tags = [];
+    if (req.body.tags) {
+      try {
+        tags = JSON.parse(req.body.tags);
+      } catch (e) {
+        // If parsing fails, try to split by comma
+        tags = req.body.tags.split(',').map((tag: string) => tag.trim());
+      }
+    }
+
+    // Prepare product data
+    const productData = {
+      name: req.body.name,
+      description: req.body.description,
+      price: parseFloat(req.body.price),
+      original_price: req.body.original_price ? parseFloat(req.body.original_price) : undefined,
+      image: imageUrl,
+      category: req.body.category,
+      discount: req.body.discount ? parseInt(req.body.discount) : 0,
+      stock: parseInt(req.body.stock),
+      tags: tags
+    };
+
+    const product = await ProductModel.create(productData);
 
     res.status(201).json({
       success: true,
@@ -104,7 +135,34 @@ export const updateProduct = async (
       return next(new AppError('Validation error', 400, errors.array()));
     }
 
-    const product = await ProductModel.update(req.params.id, req.body);
+    // Process image if provided
+    const imageUrl = processImageUpload(req);
+    
+    // Parse tags if they exist
+    let tags;
+    if (req.body.tags) {
+      try {
+        tags = JSON.parse(req.body.tags);
+      } catch (e) {
+        // If parsing fails, try to split by comma
+        tags = req.body.tags.split(',').map((tag: string) => tag.trim());
+      }
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+    
+    if (req.body.name) updateData.name = req.body.name;
+    if (req.body.description) updateData.description = req.body.description;
+    if (req.body.price) updateData.price = parseFloat(req.body.price);
+    if (req.body.original_price) updateData.original_price = parseFloat(req.body.original_price);
+    if (req.body.category) updateData.category = req.body.category;
+    if (req.body.stock) updateData.stock = parseInt(req.body.stock);
+    if (req.body.discount) updateData.discount = parseInt(req.body.discount);
+    if (tags) updateData.tags = tags;
+    if (imageUrl) updateData.image = imageUrl;
+
+    const product = await ProductModel.update(req.params.id, updateData);
 
     if (!product) {
       return next(new AppError('Product not found', 404));
