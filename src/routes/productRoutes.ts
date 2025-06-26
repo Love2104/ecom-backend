@@ -18,15 +18,17 @@ import {
 
 const router = express.Router();
 
-// Public routes
+// ✅ Public static routes first
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
 router.get('/new-arrivals', getNewArrivals);
 router.get('/on-sale', getProductsOnSale);
-router.get('/:id', getProductById);
-router.get('/:id/related', getRelatedProducts);
 
-// Admin routes
+// ✅ Dynamic routes AFTER static routes
+router.get('/:id/related', getRelatedProducts);
+router.get('/:id', getProductById);
+
+// ✅ Admin routes
 router.post('/', protect, admin, createProductValidator, createProduct);
 router.put('/:id', protect, admin, updateProductValidator, updateProduct);
 router.delete('/:id', protect, admin, deleteProduct);
