@@ -12,13 +12,14 @@ import paymentRoutes from './routes/paymentRoutes';
 
 const app: Express = express();
 
-// Middleware
-app.use(express.json());
+// Allowed frontend origins
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://ecom-frontend-p3hsoax6w-loves-projects-e374f073.vercel.app'
+  'https://ecom-frontend-eight-xi.vercel.app', // ✅ your current frontend
+  'https://ecom-frontend-p3hsoax6w-loves-projects-e374f073.vercel.app' // ✅ previous frontend too
 ];
 
+// CORS Middleware (handles preflight too)
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -27,9 +28,18 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ ensure all methods allowed
+  allowedHeaders: ['Content-Type', 'Authorization'], // ✅ necessary headers
   credentials: true
 }));
 
+// ✅ Explicitly handle preflight (OPTIONS) requests
+app.options('*', cors());
+
+// Parse JSON bodies
+app.use(express.json());
+
+// Helmet for security headers
 app.use(helmet());
 
 // Logging
@@ -46,12 +56,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Root endpoint with API information
-app.get('/', (req, res) => {
+// Root endpoint
+app.get('/', (_req, res) => {
   res.status(200).json({
     message: 'ShopEase API is running',
     documentation: '/api-docs',
@@ -59,7 +69,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Error handling middleware
+// Global error handler
 app.use(errorHandler);
 
 export default app;
