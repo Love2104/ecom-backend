@@ -4,7 +4,7 @@ import logger from '../utils/logger';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false, // Required for Render managed Postgres
+    rejectUnauthorized: false, // Safe for Neon and Render/Railway SSL
   },
 });
 
@@ -24,10 +24,10 @@ export const query = async (text: string, params?: any[]): Promise<any> => {
     const start = Date.now();
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    
+
     logger.debug(`Executed query: ${text}`);
     logger.debug(`Duration: ${duration}ms, Rows: ${res.rowCount}`);
-    
+
     return res;
   } catch (error) {
     logger.error('Query error:', error);
