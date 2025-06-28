@@ -10,8 +10,8 @@ import {
   getProductsOnSale,
   getRelatedProducts
 } from '../controllers/productController';
+
 import { protect, admin } from '../middlewares/auth';
-import { upload } from '../middlewares/upload';
 import { 
   createProductValidator, 
   updateProductValidator 
@@ -19,32 +19,28 @@ import {
 
 const router = express.Router();
 
-// Public static routes first
+// Public routes
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
 router.get('/new-arrivals', getNewArrivals);
 router.get('/on-sale', getProductsOnSale);
-
-// Dynamic routes AFTER static routes
 router.get('/:id/related', getRelatedProducts);
 router.get('/:id', getProductById);
 
-// Admin routes with file upload middleware
+// Admin routes (image via URL only)
 router.post(
-  '/', 
-  protect, 
-  admin, 
-  upload.single('image'), 
-  createProductValidator, 
+  '/',
+  protect,
+  admin,
+  createProductValidator,
   createProduct
 );
 
 router.put(
-  '/:id', 
-  protect, 
-  admin, 
-  upload.single('image'), 
-  updateProductValidator, 
+  '/:id',
+  protect,
+  admin,
+  updateProductValidator,
   updateProduct
 );
 

@@ -1,57 +1,28 @@
-import multer from 'multer';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+// src/middlewares/upload.ts
 import { Request } from 'express';
-import fs from 'fs';
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (_req, file, cb) {
-    const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueFilename);
-  }
-});
-
-// File filter
-const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Accept images only
-  if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-    return cb(new Error('Only image files are allowed!'));
-  }
-  cb(null, true);
-};
-
-// Create multer upload instance
-export const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 1024 * 1024 * 5 // 5MB max file size
-  },
-  fileFilter: fileFilter
-});
-
-// Helper function to process uploaded file or URL
+// Helper function to validate image URL format
 export const processImageUpload = (req: Request): string | null => {
-  // Check if file was uploaded
-  if (req.file) {
-    // Generate URL for the uploaded file
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    return `${baseUrl}/uploads/${req.file.filename}`;
+  let imageUrl = req.body.image_url;
+
+  if (!imageUrl) return null;
+
+  // Convert Google Drive share link to direct view link
+  const driveMatch = imageUrl.match(/https:\/\/drive\.google\.com\/file\/d\/([^/]+)\//);
+  if (driveMatch) {
+    const fileId = driveMatch[1];
+    imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
   }
-  
-  // Check if image URL was provided
-  if (req.body.image_url) {
-    return req.body.image_url;
+
+  // Final URL validation
+  try {
+    const urlObj = new URL(imageUrl);
+    if (!urlObj.protocol.startsWith('http')) {
+      throw new Error();
+    }
+  } catch {
+    throw new Error('Invalid image URL');
   }
-  
-  return null;
+
+  return imageUrl;
 };

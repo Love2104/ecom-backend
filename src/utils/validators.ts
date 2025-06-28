@@ -20,10 +20,17 @@ export const createProductValidator = [
   body('description').notEmpty().withMessage('Description is required'),
   body('price').isNumeric().withMessage('Price must be a number'),
   body('category').notEmpty().withMessage('Category is required'),
-  body('image').isURL().withMessage('Image must be a valid URL'),
+ body('image_url')
+  .isURL().withMessage('Image must be a valid URL'),
+
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
   body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100'),
-  body('tags').optional().isArray().withMessage('Tags must be an array')
+  body('tags').optional().custom((value) => {
+    // Accept both array or comma-separated string (e.g., "tag1,tag2")
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    throw new Error('Tags must be an array or a comma-separated string');
+  })
 ];
 
 export const updateProductValidator = [
@@ -31,8 +38,16 @@ export const updateProductValidator = [
   body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
   body('price').optional().isNumeric().withMessage('Price must be a number'),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
-  body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100')
+  body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100'),
+ body('image_url')
+  .isURL().withMessage('Image must be a valid URL'),
+  body('tags').optional().custom((value) => {
+    if (Array.isArray(value)) return true;
+    if (typeof value === 'string') return true;
+    throw new Error('Tags must be an array or a comma-separated string');
+  })
 ];
+
 
 // Order validators
 export const createOrderValidator = [
