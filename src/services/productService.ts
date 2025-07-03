@@ -51,6 +51,7 @@ if ((result.rowCount ?? 0) > 0) {
 }
 
 
+
   const success = await ProductModel.delete(id);
   if (!success) {
     throw new AppError('Product not found', 404);
