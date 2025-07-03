@@ -1,6 +1,6 @@
 import { ProductModel, ProductInput, Product } from '../models/Product';
 import { AppError } from '../middlewares/errorHandler';
-
+import db from '../config/db'; // your raw SQL or pg client
 export class ProductService {
   // Get all products with filtering
   static async getProducts(filters?: {
@@ -39,13 +39,23 @@ export class ProductService {
   }
 
   // Delete a product
-  static async deleteProduct(id: string): Promise<void> {
-    const success = await ProductModel.delete(id);
-    if (!success) {
-      throw new AppError('Product not found', 404);
-    }
-  }
+static async deleteProduct(id: string): Promise<void> {
+  // Check if product is referenced in any order item
+  const result = await db.query(
+    'SELECT 1 FROM order_items WHERE product_id = $1 LIMIT 1',
+    [id]
+  );
 
+if ((result.rowCount ?? 0) > 0) {
+  throw new AppError('Cannot delete product: it is part of an existing order', 400);
+}
+
+
+  const success = await ProductModel.delete(id);
+  if (!success) {
+    throw new AppError('Product not found', 404);
+  }
+}
   // Get featured products
   static async getFeaturedProducts(limit: number = 4): Promise<Product[]> {
     return await ProductModel.getFeatured(limit);
