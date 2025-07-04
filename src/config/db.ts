@@ -18,19 +18,20 @@ export const connectDB = async (): Promise<void> => {
     throw error;
   }
 };
-
 export const query = async (text: string, params?: any[]): Promise<any> => {
   try {
     const start = Date.now();
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    logger.debug(`Executed query: ${text}`);
-    logger.debug(`Duration: ${duration}ms, Rows: ${res.rowCount}`);
+    console.log('Executed query', { text, duration, rows: res.rowCount });
     return res;
   } catch (error) {
-    logger.error('Query error:', error);
+    console.error('Database error:', error);
+    console.error('Query:', text);
+    console.error('Params:', params);
     throw error;
   }
 };
+
 
 export default pool;

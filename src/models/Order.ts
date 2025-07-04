@@ -103,14 +103,32 @@ export class OrderModel {
     }
   }
 
-  static async findById(id: string): Promise<Order | null> {
-    const orderResult = await query('SELECT * FROM orders WHERE id = $1', [id]);
-    if (orderResult.rows.length === 0) return null;
-    const order = orderResult.rows[0];
-    const itemsResult = await query('SELECT * FROM order_items WHERE order_id = $1', [id]);
-    order.items = itemsResult.rows;
-    return order;
-  }
+ static async findById(id: string): Promise<Order | null> {
+  const orderResult = await query('SELECT * FROM orders WHERE id = $1', [id]);
+  if (orderResult.rows.length === 0) return null;
+
+  const order = orderResult.rows[0];
+
+  // Get full order items with product details
+  const itemsResult = await query(
+    `SELECT 
+        oi.id,
+        oi.order_id,
+        oi.product_id,
+        p.name AS product_name,
+        p.price,
+
+        oi.quantity
+     FROM order_items oi
+     JOIN products p ON oi.product_id = p.id
+     WHERE oi.order_id = $1`,
+    [id]
+  );
+
+  order.items = itemsResult.rows;
+  return order;
+}
+
 
   static async findByUserId(userId: string): Promise<Order[]> {
     const ordersResult = await query('SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
