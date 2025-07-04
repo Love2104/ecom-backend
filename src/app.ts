@@ -14,8 +14,7 @@ const app: Express = express();
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://ecom-frontend-eight-xi.vercel.app',
-  'https://ecom-frontend-p3hsoax6w-loves-projects-e374f073.vercel.app',
+  'https://ecom-frontend-iota-three.vercel.app'
 ];
 
 app.use(cors({
