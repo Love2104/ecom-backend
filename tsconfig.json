@@ -9,10 +9,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-      "typeRoots": ["./node_modules/@types", "./src/types"],  // ✅ Add this
-      
-    "types": ["node", "express"]
+   "typeRoots": ["./node_modules/@types"],
+"types": ["node", "express"]
   },
-  "include": ["src/**/*"],
+"include": ["src", "src/types/express-extension.d.ts"],
   "exclude": ["node_modules", "**/*.test.ts"]
 }
