@@ -10,6 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
       "typeRoots": ["./node_modules/@types", "./src/types"],  // ✅ Add this
+      
     "types": ["node", "express"]
   },
   "include": ["src/**/*"],

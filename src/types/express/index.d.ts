@@ -1,8 +1,8 @@
-// src/types/express.d.ts
+// src/types/express/index.d.ts
 import 'express';
 
 declare module 'express' {
-  export interface Request {
+  interface Request {
     user?: {
       id: string;
       role: string;
