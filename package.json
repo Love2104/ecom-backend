@@ -10,6 +10,8 @@
     "migrate": "ts-node src/database/migrate.ts"
   },
   "dependencies": {
+    "@types/node": "^20.19.4",
+
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -33,7 +35,6 @@
     "@types/morgan": "^1.9.5",
     "@types/ms": "^2.1.0",
     "@types/multer": "^1.4.13",
-    "@types/node": "^20.19.4",
     "@types/pg": "^8.10.2",
     "@types/qrcode": "^1.5.1",
     "@types/uuid": "^9.0.8",
