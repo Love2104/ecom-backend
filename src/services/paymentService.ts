@@ -3,20 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { PaymentModel, Payment } from '../models/Payment';
 import { OrderModel } from '../models/Order';
 import { AppError } from '../middlewares/errorHandler';
+import razorpay from '../config/razorpay';
+import { createHmac } from 'crypto'; // ✅ FIXED
 
 export class PaymentService {
-  // Create payment intent (UPI or card)
-  static async createPaymentIntent(
-    orderId: string,
-    method: 'card' | 'upi',
-    userId: string
-  ): Promise<{
+  // ✅ Create Razorpay payment order (real)
+  static async createRazorpayPaymentIntent(orderId: string, userId: string): Promise<{
+    order: any;
     payment: Payment;
-    upi?: {
-      qrCode: string;
-      reference: string;
-      upiId: string;
-    };
   }> {
     const order = await OrderModel.findById(orderId);
     if (!order) throw new AppError('Order not found', 404);
@@ -25,84 +19,94 @@ export class PaymentService {
     const existingPayment = await PaymentModel.findByOrderId(orderId);
     if (existingPayment) throw new AppError('Payment already exists', 400);
 
+    // Create payment record in DB
     const payment = await PaymentModel.create({
       order_id: orderId,
       amount: order.total,
-      method,
+      method: 'card', // Default to card for Razorpay
       payment_details: {}
     });
 
-    if (!payment) throw new AppError('Failed to create payment', 500);
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(order.total * 100), // amount in paise
+      currency: 'INR',
+      receipt: `rcpt_${uuidv4().substring(0, 8)}`,
+      payment_capture: true,
+    });
 
-    if (method === 'upi') {
-      // Use the configured UPI ID from environment variables
-      const upiId = process.env.UPI_ID || '7240172161@ybl';
-      const merchantName = process.env.UPI_MERCHANT_NAME || 'ShopEase';
-      
-      const upiData = {
-        pa: upiId,
-        pn: merchantName,
-        am: order.total.toString(),
-        cu: 'INR',
-        tr: payment.payment_reference
-      };
+    // Update payment with Razorpay order ID
+    await PaymentModel.updateRazorpayOrderId(payment.id, razorpayOrder.id);
 
-      const upiUri = `upi://pay?pa=${upiData.pa}&pn=${upiData.pn}&am=${upiData.am}&cu=${upiData.cu}&tr=${upiData.tr}`;
-      const qrCode = await QRCode.toDataURL(upiUri);
+    return { order: razorpayOrder, payment };
+  }
 
-      return {
-        payment,
-        upi: {
-          qrCode,
-          reference: payment.payment_reference,
-          upiId: upiData.pa
-        }
-      };
+  // ❌ (optional) UPI QR-based manual fallback (not used in Razorpay flow, but kept for custom)
+  static async generateUpiQr(payment: Payment, amount: number): Promise<{
+    qrCode: string;
+    reference: string;
+    upiId: string;
+  }> {
+    const upiId = process.env.UPI_ID || '7240172161@ybl';
+    const merchantName = process.env.UPI_MERCHANT_NAME || 'ShopEase';
+
+    const upiUri = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${amount}&cu=INR&tr=${payment.payment_reference}`;
+    const qrCode = await QRCode.toDataURL(upiUri);
+
+    return {
+      qrCode,
+      reference: payment.payment_reference,
+      upiId
+    };
+  }
+
+  // ✅ Verify Razorpay payment signature
+  static async verifyRazorpayPayment(
+    razorpayOrderId: string, 
+    razorpayPaymentId: string, 
+    signature: string
+  ): Promise<boolean> {
+    const secret = process.env.RAZORPAY_KEY_SECRET!;
+    const body = `${razorpayOrderId}|${razorpayPaymentId}`;
+    
+    const expectedSignature = createHmac('sha256', secret)
+  .update(body)
+  .digest('hex');
+
+    
+    return expectedSignature === signature;
+  }
+
+  // ✅ Update payment after successful Razorpay callback
+  static async confirmRazorpayPayment(
+    razorpayOrderId: string, 
+    razorpayPaymentId: string, 
+    signature: string
+  ): Promise<Payment> {
+    const payment = await PaymentModel.findByRazorpayOrderId(razorpayOrderId);
+    if (!payment) throw new AppError('Payment not found', 404);
+
+    const isValid = await this.verifyRazorpayPayment(
+      razorpayOrderId,
+      razorpayPaymentId,
+      signature
+    );
+
+    if (!isValid) {
+      throw new AppError('Invalid payment signature', 400);
     }
 
-    return { payment };
-  }
-
-  // Verify UPI payment
-  static async verifyUpiPayment(paymentReference: string, userId: string): Promise<Payment> {
-    const payment = await PaymentModel.findByReference(paymentReference);
-    if (!payment) throw new AppError('Payment not found', 404);
-
-    const order = await OrderModel.findById(payment.order_id);
-    if (!order) throw new AppError('Order not found', 404);
-    if (order.user_id !== userId) throw new AppError('Unauthorized', 403);
-
-    const updatedPayment = await PaymentModel.updateStatus(payment.id, 'completed', {
-      transactionId: uuidv4()
+    const updated = await PaymentModel.updateStatus(payment.id, 'completed', {
+      razorpay_payment_id: razorpayPaymentId,
+      razorpay_signature: signature,
     });
 
-    if (!updatedPayment) throw new AppError('Failed to update payment', 500);
+    if (!updated) throw new AppError('Failed to confirm payment', 500);
 
-    await OrderModel.updateStatus(order.id, 'processing');
-    return updatedPayment;
+    await OrderModel.updateStatus(payment.order_id, 'processing');
+    return updated;
   }
 
-  // Process card payment
-  static async processCardPayment(paymentId: string, cardDetails: any, userId: string): Promise<Payment> {
-    const payment = await PaymentModel.findById(paymentId);
-    if (!payment) throw new AppError('Payment not found', 404);
-
-    const order = await OrderModel.findById(payment.order_id);
-    if (!order) throw new AppError('Order not found', 404);
-    if (order.user_id !== userId) throw new AppError('Unauthorized', 403);
-
-    const updatedPayment = await PaymentModel.updateStatus(payment.id, 'completed', {
-      transactionId: uuidv4(),
-      cardLast4: cardDetails.cardNumber.slice(-4)
-    });
-
-    if (!updatedPayment) throw new AppError('Failed to update payment', 500);
-
-    await OrderModel.updateStatus(order.id, 'processing');
-    return updatedPayment;
-  }
-
-  // Get payment status
+  // 🟢 Get payment status
   static async getPaymentStatus(paymentId: string, userId: string, isAdmin: boolean): Promise<Payment> {
     const payment = await PaymentModel.findById(paymentId);
     if (!payment) throw new AppError('Payment not found', 404);

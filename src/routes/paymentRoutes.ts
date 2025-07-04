@@ -1,23 +1,19 @@
 import express from 'express';
-import { 
+import {
   createPaymentIntent,
-  verifyUpiPayment,
-  processCardPayment,
+  verifyPayment,
   getPaymentStatus
 } from '../controllers/paymentController';
 import { protect } from '../middlewares/auth';
-import { 
-  createPaymentValidator, 
-  verifyUpiPaymentValidator,
-  processCardPaymentValidator
+import {
+  createPaymentValidator,
+  verifyPaymentValidator
 } from '../utils/validators';
 
 const router = express.Router();
 
-// Protected routes
 router.post('/create-intent', protect, createPaymentValidator, createPaymentIntent);
-router.post('/verify-upi', protect, verifyUpiPaymentValidator, verifyUpiPayment);
-router.post('/process-card', protect, processCardPaymentValidator, processCardPayment);
+router.post('/verify', protect, verifyPaymentValidator, verifyPayment);
 router.get('/:id', protect, getPaymentStatus);
 
 export default router;

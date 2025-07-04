@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler';
 
-// Extend Express Request interface
 declare global {
   namespace Express {
     interface Request {
       user?: {
         id: string;
         role: string;
+        email?: string;
       };
     }
   }
@@ -21,36 +21,29 @@ export const protect = async (
 ) => {
   try {
     let token;
-
-    // Check for token in headers
     if (
       req.headers.authorization &&
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
     }
-
-    // Check if token exists
     if (!token) {
       return next(new AppError('Not authorized to access this route', 401));
     }
-
     try {
-      // Verify token
       const decoded = jwt.verify(
         token, 
         process.env.JWT_SECRET || 'fallback_secret_key_for_development'
       ) as {
         id: string;
         role: string;
+        email?: string;
       };
-
-      // Add user to request object
       req.user = {
         id: decoded.id,
-        role: decoded.role
+        role: decoded.role,
+        email: decoded.email
       };
-
       next();
     } catch (error) {
       return next(new AppError('Invalid or expired token', 401));
@@ -60,12 +53,10 @@ export const protect = async (
   }
 };
 
-// Middleware to check if user is admin
 export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return next(new AppError('Authentication required', 401));
   }
-  
   if (req.user.role === 'admin') {
     next();
   } else {

@@ -1,244 +1,105 @@
 import { Request, Response, NextFunction } from 'express';
+import Razorpay from 'razorpay';
 import { validationResult } from 'express-validator';
-import QRCode from 'qrcode';
-import { v4 as uuidv4 } from 'uuid';
 import { PaymentModel } from '../models/Payment';
 import { OrderModel } from '../models/Order';
 import { AppError } from '../middlewares/errorHandler';
+import crypto from 'crypto';
 
-// Create a payment intent
-export const createPaymentIntent = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+});
+
+export const createPaymentIntent = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return next(new AppError('Validation error', 400, errors.array()));
-    }
-
+    if (!errors.isEmpty()) return next(new AppError('Validation error', 400, errors.array()));
     const { orderId, method } = req.body;
-
-    // Get the order
+    const userId = req.user!.id;
     const order = await OrderModel.findById(orderId);
-    if (!order) {
-      return next(new AppError('Order not found', 404));
-    }
-
-    // Check if the order belongs to the user
-    if (order.user_id !== req.user!.id) {
-      return next(new AppError('Not authorized to access this order', 403));
-    }
-
-    // Check if payment already exists for this order
-    const existingPayment = await PaymentModel.findByOrderId(orderId);
-    if (existingPayment) {
-      return next(new AppError('Payment already exists for this order', 400));
-    }
-
-    // Create payment
+    if (!order) return next(new AppError('Order not found', 404));
+    if (order.user_id !== userId) return next(new AppError('Unauthorized', 403));
+    const existing = await PaymentModel.findByOrderId(orderId);
+    if (existing) return next(new AppError('Payment already exists', 400));
     const payment = await PaymentModel.create({
       order_id: orderId,
       amount: order.total,
       method,
-      payment_details: {}
+      payment_details: {},
     });
-
-    if (method === 'upi') {
-      // Use the configured UPI ID from environment variables
-      const upiId = process.env.UPI_ID || '7240172161@ybl';
-      const merchantName = process.env.UPI_MERCHANT_NAME || 'ShopEase';
-      
-      // Generate UPI payment data
-      const upiData = {
-        pa: upiId, // Merchant UPI ID from env
-        pn: merchantName,
-        am: order.total.toString(),
-        cu: 'INR',
-        tr: payment.payment_reference
-      };
-
-      // Convert to UPI URI
-      const upiUri = `upi://pay?pa=${upiData.pa}&pn=${upiData.pn}&am=${upiData.am}&cu=${upiData.cu}&tr=${upiData.tr}`;
-
-      // Generate QR code
-      const qrCode = await QRCode.toDataURL(upiUri);
-
-      res.status(201).json({
-        success: true,
-        payment: {
-          id: payment.id,
-          reference: payment.payment_reference,
-          amount: payment.amount,
-          method: payment.method,
-          status: payment.status
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(order.total * 100),
+      currency: 'INR',
+      receipt: payment.payment_reference,
+      payment_capture: true,
+    });
+    await PaymentModel.updateRazorpayOrderId(payment.id, razorpayOrder.id);
+    return res.status(201).json({
+      success: true,
+      payment,
+      razorpay: {
+        orderId: razorpayOrder.id,
+        key: process.env.RAZORPAY_KEY_ID,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: "ShopEase",
+        description: `Payment for order #${order.id.slice(-6)}`,
+        prefill: {
+          name: order.shipping_address.name,
+          email: req.user!.email || '',
+          contact: order.shipping_address.phone || ''
         },
-        upi: {
-          qrCode,
-          reference: payment.payment_reference,
-          upiId: upiData.pa
+        notes: {
+          payment_reference: payment.payment_reference,
+          order_id: order.id
         }
-      });
-    } else {
-      // For card payments, just return the payment details
-      res.status(201).json({
-        success: true,
-        payment: {
-          id: payment.id,
-          reference: payment.payment_reference,
-          amount: payment.amount,
-          method: payment.method,
-          status: payment.status
-        }
-      });
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Verify UPI payment
-export const verifyUpiPayment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return next(new AppError('Validation error', 400, errors.array()));
-    }
-
-    const { paymentReference } = req.body;
-
-    // Get the payment
-    const payment = await PaymentModel.findByReference(paymentReference);
-    if (!payment) {
-      return next(new AppError('Payment not found', 404));
-    }
-
-    // Get the order
-    const order = await OrderModel.findById(payment.order_id);
-    if (!order) {
-      return next(new AppError('Order not found', 404));
-    }
-
-    // Check if the order belongs to the user
-    if (order.user_id !== req.user!.id) {
-      return next(new AppError('Not authorized to access this payment', 403));
-    }
-
-    // In a real-world scenario, you would check with the payment gateway
-    // Here, we'll simulate a successful payment
-
-    // Update payment status
-    const updatedPayment = await PaymentModel.updateStatus(
-      payment.id,
-      'completed',
-      { transactionId: uuidv4() }
-    );
-
-    // Update order status
-    await OrderModel.updateStatus(order.id, 'processing');
-
-    res.status(200).json({
-      success: true,
-      payment: updatedPayment
+      },
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
-// Process card payment
-export const processCardPayment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return next(new AppError('Validation error', 400, errors.array()));
-    }
-
-    const { paymentId, cardDetails } = req.body;
-
-    // Get the payment
-    const payment = await PaymentModel.findById(paymentId);
-    if (!payment) {
-      return next(new AppError('Payment not found', 404));
-    }
-
-    // Get the order
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentReference } = req.body;
+    const userId = req.user!.id;
+    const payment = await PaymentModel.findByRazorpayOrderId(razorpay_order_id);
+    if (!payment) return next(new AppError('Payment not found', 404));
     const order = await OrderModel.findById(payment.order_id);
-    if (!order) {
-      return next(new AppError('Order not found', 404));
+    if (!order) return next(new AppError('Order not found', 404));
+    if (order.user_id !== userId) return next(new AppError('Unauthorized', 403));
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .update(body)
+      .digest('hex');
+    if (expectedSignature !== razorpay_signature) {
+      return next(new AppError('Invalid signature. Payment verification failed.', 400));
     }
-
-    // Check if the order belongs to the user
-    if (order.user_id !== req.user!.id) {
-      return next(new AppError('Not authorized to access this payment', 403));
-    }
-
-    // In a real-world scenario, you would process the payment with a payment gateway
-    // Here, we'll simulate a successful payment
-
-    // Update payment status
-    const updatedPayment = await PaymentModel.updateStatus(
-      payment.id,
-      'completed',
-      { 
-        transactionId: uuidv4(),
-        cardLast4: cardDetails.cardNumber.slice(-4)
-      }
-    );
-
-    // Update order status
-    await OrderModel.updateStatus(order.id, 'processing');
-
-    res.status(200).json({
-      success: true,
-      payment: updatedPayment
+    const updated = await PaymentModel.updateStatus(payment.id, 'completed', {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
     });
-  } catch (error) {
-    next(error);
+    await OrderModel.updateStatus(order.id, 'processing');
+    return res.status(200).json({ success: true, payment: updated });
+  } catch (err) {
+    next(err);
   }
 };
 
-// Get payment status
-export const getPaymentStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const getPaymentStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payment = await PaymentModel.findById(req.params.id);
-    
-    if (!payment) {
-      return next(new AppError('Payment not found', 404));
-    }
-
-    // Get the order
+    if (!payment) return next(new AppError('Payment not found', 404));
     const order = await OrderModel.findById(payment.order_id);
-    if (!order) {
-      return next(new AppError('Order not found', 404));
-    }
-
-    // Check if the order belongs to the user or if the user is an admin
+    if (!order) return next(new AppError('Order not found', 404));
     if (order.user_id !== req.user!.id && req.user!.role !== 'admin') {
-      return next(new AppError('Not authorized to access this payment', 403));
+      return next(new AppError('Unauthorized', 403));
     }
-
-    res.status(200).json({
-      success: true,
-      payment
-    });
-  } catch (error) {
-    next(error);
+    return res.status(200).json({ success: true, payment });
+  } catch (err) {
+    next(err);
   }
 };

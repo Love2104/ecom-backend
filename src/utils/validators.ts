@@ -1,6 +1,6 @@
-import { body, param, query } from 'express-validator';
+import { body, param } from 'express-validator';
 
-// Auth validators
+// -------------------- AUTH VALIDATORS --------------------
 export const registerValidator = [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Please include a valid email'),
@@ -14,19 +14,16 @@ export const loginValidator = [
   body('password').exists().withMessage('Password is required')
 ];
 
-// Product validators
+// -------------------- PRODUCT VALIDATORS --------------------
 export const createProductValidator = [
   body('name').notEmpty().withMessage('Product name is required'),
   body('description').notEmpty().withMessage('Description is required'),
   body('price').isNumeric().withMessage('Price must be a number'),
   body('category').notEmpty().withMessage('Category is required'),
- body('image_url')
-  .isURL().withMessage('Image must be a valid URL'),
-
+  body('image_url').isURL().withMessage('Image must be a valid URL'),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
   body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100'),
   body('tags').optional().custom((value) => {
-    // Accept both array or comma-separated string (e.g., "tag1,tag2")
     if (Array.isArray(value)) return true;
     if (typeof value === 'string') return true;
     throw new Error('Tags must be an array or a comma-separated string');
@@ -39,8 +36,7 @@ export const updateProductValidator = [
   body('price').optional().isNumeric().withMessage('Price must be a number'),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
   body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100'),
- body('image_url')
-  .isURL().withMessage('Image must be a valid URL'),
+  body('image_url').isURL().withMessage('Image must be a valid URL'),
   body('tags').optional().custom((value) => {
     if (Array.isArray(value)) return true;
     if (typeof value === 'string') return true;
@@ -48,8 +44,7 @@ export const updateProductValidator = [
   })
 ];
 
-
-// Order validators
+// -------------------- ORDER VALIDATORS --------------------
 export const createOrderValidator = [
   body('items').isArray({ min: 1 }).withMessage('Order must contain at least one item'),
   body('items.*.product_id').isUUID().withMessage('Product ID must be valid'),
@@ -64,7 +59,7 @@ export const createOrderValidator = [
   body('payment_method').isIn(['card', 'upi']).withMessage('Payment method must be card or upi')
 ];
 
-// Payment validators
+// -------------------- PAYMENT VALIDATORS --------------------
 export const createPaymentValidator = [
   body('orderId').isUUID().withMessage('Order ID must be valid'),
   body('method').isIn(['card', 'upi']).withMessage('Payment method must be card or upi')
@@ -81,4 +76,17 @@ export const processCardPaymentValidator = [
   body('cardDetails.cardName').isString().withMessage('Card name is required'),
   body('cardDetails.expiryDate').isString().withMessage('Expiry date is required'),
   body('cardDetails.cvv').isString().withMessage('CVV is required')
+];
+
+// Razorpay payment verification validator
+export const verifyPaymentValidator = [
+  body('razorpay_order_id')
+    .notEmpty()
+    .withMessage('Razorpay order ID is required'),
+  body('razorpay_payment_id')
+    .notEmpty()
+    .withMessage('Razorpay payment ID is required'),
+  body('razorpay_signature')
+    .notEmpty()
+    .withMessage('Razorpay signature is required')
 ];

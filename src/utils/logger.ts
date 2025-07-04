@@ -1,11 +1,9 @@
 import winston from 'winston';
 
-// Define log format
 const logFormat = winston.format.printf(({ level, message, timestamp }) => {
   return `${timestamp} ${level}: ${message}`;
 });
 
-// Create logger instance
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
@@ -29,7 +27,6 @@ const logger = winston.createLogger({
   ]
 });
 
-// If we're not in production, also log to the console with colorized output
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
