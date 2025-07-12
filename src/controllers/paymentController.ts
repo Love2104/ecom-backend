@@ -5,6 +5,8 @@ import { PaymentModel } from '../models/Payment';
 import { OrderModel } from '../models/Order';
 import { AppError } from '../middlewares/errorHandler';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
+
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -72,14 +74,10 @@ export const createPaymentIntent = async (req: Request, res: Response, next: Nex
 };
 
 // -------------------- VERIFY PAYMENT --------------------
+
 export const verifyPayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-    } = req.body;
-
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const userId = req.user!.id;
 
     const payment = await PaymentModel.findByRazorpayOrderId(razorpay_order_id);
@@ -89,6 +87,7 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
     if (!order) return next(new AppError('Order not found', 404));
     if (order.user_id !== userId) return next(new AppError('Unauthorized', 403));
 
+    // 🔐 Verify signature
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
@@ -99,6 +98,7 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
       return next(new AppError('Invalid signature. Payment verification failed.', 400));
     }
 
+    // ✅ Update payment and order
     const updated = await PaymentModel.updateStatus(payment.id, 'completed', {
       razorpay_order_id,
       razorpay_payment_id,
@@ -106,6 +106,49 @@ export const verifyPayment = async (req: Request, res: Response, next: NextFunct
     });
 
     await OrderModel.updateStatus(order.id, 'processing');
+
+    // ✅ Re-fetch order including items
+    const fullOrder = await OrderModel.findById(order.id);
+    if (!fullOrder) return next(new AppError('Order not found', 404));
+
+    // 🧾 Format order items for email
+    const itemsHTML = fullOrder.items?.map(item => `
+      <li>
+        ${item.product_name} × ${item.quantity} — ₹${item.price * item.quantity}
+      </li>
+    `).join('') || '<li>No items found</li>';
+
+    // 📧 Setup Nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER!,
+        pass: process.env.SMTP_PASS!,
+      },
+    });
+
+    // 📩 Email content
+    const mailOptions = {
+      from: process.env.SMTP_FROM_EMAIL!,
+      to: process.env.ADMIN_NOTIFY_EMAIL!,
+      subject: '🛒 New Order Received',
+      html: `
+        <h2>🛒 New Order Confirmation</h2>
+        <p><strong>Customer:</strong> ${fullOrder.shipping_address.name} (${req.user?.email})</p>
+        <p><strong>Amount:</strong> ₹${fullOrder.total}</p>
+        <p><strong>Payment Method:</strong> ${payment.method}</p>
+        <p><strong>Order ID:</strong> ${fullOrder.id}</p>
+        <p><strong>Status:</strong> Confirmed</p>
+        <p><strong>Time:</strong> ${new Date().toLocaleString('en-IN')}</p>
+        <h3>🛍️ Items Ordered</h3>
+        <ul>
+          ${itemsHTML}
+        </ul>
+      `,
+    };
+
+    // ✅ Send the email
+    await transporter.sendMail(mailOptions);
 
     return res.status(200).json({ success: true, payment: updated });
   } catch (err) {
