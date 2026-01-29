@@ -1,0 +1,23 @@
+src/routes/productRoutes.ts(8,3): error TS2305: Module '"../controllers/productController"' has no exported member 'getFeaturedProducts'.
+src/routes/productRoutes.ts(9,3): error TS2305: Module '"../controllers/productController"' has no exported member 'getNewArrivals'.
+src/routes/productRoutes.ts(10,3): error TS2305: Module '"../controllers/productController"' has no exported member 'getProductsOnSale'.
+src/routes/productRoutes.ts(11,3): error TS2724: '"../controllers/productController"' has no exported member named 'getRelatedProducts'. Did you mean 'createProduct'?
+src/scripts/seed.ts(40,42): error TS2345: Argument of type '{ key_code: string; created_by: string; assigned_email: string; }' is not assignable to parameter of type 'string'.
+src/services/authService.ts(2,32): error TS2305: Module '"../models/User"' has no exported member 'UserOutput'.
+src/services/authService.ts(16,36): error TS2339: Property 'comparePassword' does not exist on type 'typeof UserModel'.
+src/services/authService.ts(16,67): error TS2339: Property 'password' does not exist on type 'User'.
+src/services/orderService.ts(36,53): error TS2345: Argument of type '"pending" | "processing" | "shipped" | "delivered" | "cancelled"' is not assignable to parameter of type 'OrderStatus'.
+  Type '"pending"' is not assignable to type 'OrderStatus'. Did you mean '"PENDING"'?
+src/services/paymentService.ts(26,7): error TS2353: Object literal may only specify known properties, and 'method' does not exist in type 'PaymentInput'.
+src/services/paymentService.ts(38,24): error TS2339: Property 'updateRazorpayOrderId' does not exist on type 'typeof PaymentModel'.
+src/services/paymentService.ts(52,95): error TS2339: Property 'payment_reference' does not exist on type 'Payment'.
+src/services/paymentService.ts(57,26): error TS2339: Property 'payment_reference' does not exist on type 'Payment'.
+src/services/paymentService.ts(98,65): error TS2345: Argument of type '"completed"' is not assignable to parameter of type 'PaymentStatus'.
+src/services/paymentService.ts(105,53): error TS2345: Argument of type '"processing"' is not assignable to parameter of type 'OrderStatus'.
+src/services/productService.ts(1,24): error TS2305: Module '"../models/Product"' has no exported member 'ProductInput'.
+src/services/productService.ts(15,5): error TS2739: Type 'Product[]' is missing the following properties from type '{ products: Product[]; total: number; }': products, total
+src/services/productService.ts(62,31): error TS2339: Property 'getFeatured' does not exist on type 'typeof ProductModel'.
+src/services/productService.ts(67,31): error TS2339: Property 'getNewArrivals' does not exist on type 'typeof ProductModel'.
+src/services/productService.ts(72,31): error TS2339: Property 'getOnSale' does not exist on type 'typeof ProductModel'.
+src/services/productService.ts(78,31): error TS2339: Property 'getRelated' does not exist on type 'typeof ProductModel'.
+src/services/productService.ts(78,50): error TS2339: Property 'category' does not exist on type 'Product'.
