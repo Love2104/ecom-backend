@@ -19,6 +19,7 @@ export const createProductValidator = [
   body('name').notEmpty().withMessage('Product name is required'),
   body('description').notEmpty().withMessage('Description is required'),
   body('price').isNumeric().withMessage('Price must be a number'),
+<<<<<<< HEAD
   body('category').notEmpty().withMessage('Category is required'),
   body('image_url').isURL().withMessage('Image must be a valid URL'),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
@@ -28,6 +29,11 @@ export const createProductValidator = [
     if (typeof value === 'string') return true;
     throw new Error('Tags must be an array or a comma-separated string');
   })
+=======
+  body('category_id').isUUID().withMessage('Valid Category ID is required'),
+  body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
+  body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100')
+>>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 ];
 
 export const updateProductValidator = [
@@ -35,6 +41,7 @@ export const updateProductValidator = [
   body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
   body('price').optional().isNumeric().withMessage('Price must be a number'),
   body('stock').optional().isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
+<<<<<<< HEAD
   body('discount').optional().isInt({ min: 0, max: 100 }).withMessage('Discount must be between 0 and 100'),
   body('image_url').isURL().withMessage('Image must be a valid URL'),
   body('tags').optional().custom((value) => {
@@ -42,6 +49,9 @@ export const updateProductValidator = [
     if (typeof value === 'string') return true;
     throw new Error('Tags must be an array or a comma-separated string');
   })
+=======
+  body('category_id').optional().isUUID().withMessage('Category ID must be valid')
+>>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 ];
 
 // -------------------- ORDER VALIDATORS --------------------
@@ -55,14 +65,22 @@ export const createOrderValidator = [
   body('shipping_address.city').notEmpty().withMessage('City is required'),
   body('shipping_address.state').notEmpty().withMessage('State is required'),
   body('shipping_address.zip_code').notEmpty().withMessage('ZIP code is required'),
+<<<<<<< HEAD
   body('shipping_address.country').notEmpty().withMessage('Country is required'),
   body('payment_method').isIn(['card', 'upi']).withMessage('Payment method must be card or upi')
+=======
+  body('shipping_address.country').notEmpty().withMessage('Country is required')
+>>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 ];
 
 // -------------------- PAYMENT VALIDATORS --------------------
 export const createPaymentValidator = [
+<<<<<<< HEAD
   body('orderId').isUUID().withMessage('Order ID must be valid'),
   body('method').isIn(['card', 'upi']).withMessage('Payment method must be card or upi')
+=======
+  body('orderId').isUUID().withMessage('Order ID must be valid')
+>>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 ];
 
 export const verifyUpiPaymentValidator = [
@@ -71,11 +89,15 @@ export const verifyUpiPaymentValidator = [
 
 export const processCardPaymentValidator = [
   body('paymentId').isUUID().withMessage('Payment ID must be valid'),
+<<<<<<< HEAD
   body('cardDetails').isObject().withMessage('Card details are required'),
   body('cardDetails.cardNumber').isString().withMessage('Card number is required'),
   body('cardDetails.cardName').isString().withMessage('Card name is required'),
   body('cardDetails.expiryDate').isString().withMessage('Expiry date is required'),
   body('cardDetails.cvv').isString().withMessage('CVV is required')
+=======
+  body('cardDetails').isObject().withMessage('Card details are required')
+>>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 ];
 
 // Razorpay payment verification validator

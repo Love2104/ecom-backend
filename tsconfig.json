@@ -9,6 +9,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+<<<<<<< HEAD
     "typeRoots": ["src/node_modules/@types"]  // ✅ Tells TypeScript where to look for types
   },
   "include": [
@@ -17,3 +18,18 @@
   ],
   "exclude": ["src/node_modules", "**/*.test.ts"]
 }
+=======
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
+  },
+  "include": [
+    "src",
+    "src/types/express-extension.d.ts" // ✅ If you’ve added custom Express extensions
+  ],
+  "exclude": [
+    "src/node_modules",
+    "**/*.test.ts"
+  ]
+}
+>>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
