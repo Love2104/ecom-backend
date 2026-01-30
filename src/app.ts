@@ -18,7 +18,9 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
 
- 'https://ecom-frontend-five-pearl.vercel.app'
+ 'https://ecom-frontend-five-pearl.vercel.app',
+ 'https://shopease-india.web.app',
+ 'https://shopease-india.firebaseapp.com'
 
 ];
 
