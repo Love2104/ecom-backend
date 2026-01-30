@@ -17,7 +17,9 @@ const app: Express = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-  'https://ecom-frontend-iota-three.vercel.app'
+
+ 'https://ecom-frontend-five-pearl.vercel.app'
+
 ];
 
 app.use(cors({
