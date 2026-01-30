@@ -1,9 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-<<<<<<< HEAD
-=======
 console.log('Starting application...');
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 
 import app from './app';
 import logger from './utils/logger';

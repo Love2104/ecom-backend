@@ -1,10 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler';
-<<<<<<< HEAD
-=======
 import { UserModel } from '../models/User';
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 
 declare global {
   namespace Express {
@@ -13,10 +10,7 @@ declare global {
         id: string;
         role: string;
         email?: string;
-<<<<<<< HEAD
-=======
         name?: string;
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
       };
     }
   }
@@ -35,25 +29,6 @@ export const protect = async (
     ) {
       token = req.headers.authorization.split(' ')[1];
     }
-<<<<<<< HEAD
-    if (!token) {
-      return next(new AppError('Not authorized to access this route', 401));
-    }
-    try {
-      const decoded = jwt.verify(
-        token, 
-        process.env.JWT_SECRET || 'fallback_secret_key_for_development'
-      ) as {
-        id: string;
-        role: string;
-        email?: string;
-      };
-      req.user = {
-        id: decoded.id,
-        role: decoded.role,
-        email: decoded.email
-      };
-=======
 
     if (!token) {
       return next(new AppError('Not authorized to access this route', 401));
@@ -80,8 +55,6 @@ export const protect = async (
         email: user.email,
         name: user.name
       };
-
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
       next();
     } catch (error) {
       return next(new AppError('Invalid or expired token', 401));
@@ -91,8 +64,6 @@ export const protect = async (
   }
 };
 
-<<<<<<< HEAD
-=======
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
@@ -103,16 +74,11 @@ export const restrictTo = (...roles: string[]) => {
 };
 
 // Deprecated admin middleware (kept for compatibility or removal)
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 export const admin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return next(new AppError('Authentication required', 401));
   }
-<<<<<<< HEAD
-  if (req.user.role === 'admin') {
-=======
   if (req.user.role === 'SUPERADMIN' || req.user.role === 'MANAGER') {
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
     next();
   } else {
     next(new AppError('Not authorized as an admin', 403));

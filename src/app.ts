@@ -6,22 +6,17 @@ import path from 'path';
 import { errorHandler } from './middlewares/errorHandler';
 
 import authRoutes from './routes/authRoutes';
-<<<<<<< HEAD
-import productRoutes from './routes/productRoutes';
-import orderRoutes from './routes/orderRoutes';
-import paymentRoutes from './routes/paymentRoutes';
-=======
 import userRoutes from './routes/userRoutes';
 import productRoutes from './routes/productRoutes';
 import orderRoutes from './routes/orderRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import categoryRoutes from './routes/categoryRoutes';
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 
 const app: Express = express();
 
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:5173',
   'https://ecom-frontend-iota-three.vercel.app'
 ];
 
@@ -52,13 +47,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/api/auth', authRoutes);
-<<<<<<< HEAD
-app.use('/api/products', productRoutes);
-=======
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 

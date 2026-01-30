@@ -1,14 +1,6 @@
 import { query } from '../config/db';
 import bcrypt from 'bcryptjs';
 
-<<<<<<< HEAD
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  role: 'user' | 'admin';
-=======
 export type UserRole = 'SUPERADMIN' | 'MANAGER' | 'SUPPLIER' | 'BUYER';
 export type SupplierStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 
@@ -25,26 +17,11 @@ export interface User {
   business_name?: string;
   gst_number?: string;
   manager_key_id?: string;
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
   created_at: Date;
   updated_at: Date;
 }
 
 export interface UserInput {
-<<<<<<< HEAD
-  name: string;
-  email: string;
-  password: string;
-  role?: 'user' | 'admin';
-}
-
-export interface UserOutput {
-  id: string;
-  name: string;
-  email: string;
-  role: 'user' | 'admin';
-  created_at: Date;
-=======
   email: string;
   password: string;
   name: string;
@@ -56,27 +33,15 @@ export interface UserOutput {
   business_name?: string;
   gst_number?: string;
   manager_key_id?: string;
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
 }
 
 export class UserModel {
   // Create a new user
-<<<<<<< HEAD
-  static async create(userData: UserInput): Promise<UserOutput> {
-    // Hash password
-=======
   static async create(userData: UserInput): Promise<User> {
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(userData.password, salt);
 
     const result = await query(
-<<<<<<< HEAD
-      `INSERT INTO users (name, email, password, role) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING id, name, email, role, created_at`,
-      [userData.name, userData.email, hashedPassword, userData.role || 'user']
-=======
       `INSERT INTO users (
         email, password_hash, name, role, is_verified, 
         otp_code, otp_expires_at, 
@@ -98,28 +63,16 @@ export class UserModel {
         userData.gst_number || null,
         userData.manager_key_id || null
       ]
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
     );
 
     return result.rows[0];
   }
 
-<<<<<<< HEAD
-  // Find user by email
-=======
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
   static async findByEmail(email: string): Promise<User | null> {
     const result = await query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0] || null;
   }
 
-<<<<<<< HEAD
-  // Find user by ID
-  static async findById(id: string): Promise<UserOutput | null> {
-    const result = await query(
-      'SELECT id, name, email, role, created_at FROM users WHERE id = $1',
-      [id]
-=======
   static async getSupplierRequests(): Promise<User[]> {
     const result = await query(
       "SELECT id, name, email, business_name, gst_number, supplier_status, created_at FROM users WHERE supplier_status = 'PENDING' ORDER BY created_at DESC"
@@ -132,52 +85,10 @@ export class UserModel {
     const result = await query(
       "UPDATE users SET supplier_status = $1, role = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
       [status, role, id]
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
     );
     return result.rows[0] || null;
   }
 
-<<<<<<< HEAD
-  // Update user
-  static async update(id: string, userData: Partial<UserInput>): Promise<UserOutput | null> {
-    // Start building the query
-    let updateQuery = 'UPDATE users SET ';
-    const values: any[] = [];
-    let valueIndex = 1;
-
-    // Add fields to update
-    if (userData.name) {
-      updateQuery += `name = $${valueIndex}, `;
-      values.push(userData.name);
-      valueIndex++;
-    }
-
-    if (userData.email) {
-      updateQuery += `email = $${valueIndex}, `;
-      values.push(userData.email);
-      valueIndex++;
-    }
-
-    if (userData.password) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.password, salt);
-      updateQuery += `password = $${valueIndex}, `;
-      values.push(hashedPassword);
-      valueIndex++;
-    }
-
-    // Add updated_at
-    updateQuery += `updated_at = NOW() WHERE id = $${valueIndex} RETURNING id, name, email, role, created_at`;
-    values.push(id);
-
-    const result = await query(updateQuery, values);
-    return result.rows[0] || null;
-  }
-
-  // Compare password
-  static async comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(password, hashedPassword);
-=======
   static async findById(id: string): Promise<User | null> {
     const result = await query('SELECT * FROM users WHERE id = $1', [id]);
     return result.rows[0] || null;
@@ -236,6 +147,5 @@ export class UserModel {
   static async delete(id: string): Promise<boolean> {
     const result = await query('DELETE FROM users WHERE id = $1', [id]);
     return (result.rowCount ?? 0) > 0;
->>>>>>> 77a314b (Add supplier demotion feature with product cleanup and forgot password functionality)
   }
 }
